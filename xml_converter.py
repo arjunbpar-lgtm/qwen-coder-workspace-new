@@ -18,6 +18,7 @@ import pandas as pd
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 import os
+import tempfile
 
 
 class TallyXMLConverter:
@@ -261,6 +262,7 @@ class TallyXMLConverter:
         # Pretty print and write
         xml_string = self._pretty_print_xml(envelope)
 
+        output_path = self._normalize_output_path(output_path)
         output_dir = os.path.dirname(output_path)
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
@@ -269,6 +271,17 @@ class TallyXMLConverter:
             f.write(xml_string)
 
         return voucher_count
+
+    def _normalize_output_path(self, output_path: str) -> str:
+        """Normalize output paths for the current platform."""
+        normalized_path = os.path.normpath(output_path)
+
+        # Support common POSIX temp paths when the app is running on Windows.
+        if os.name == "nt" and output_path.startswith("/tmp"):
+            relative_path = output_path[4:].lstrip("/\\")
+            normalized_path = os.path.join(tempfile.gettempdir(), relative_path)
+
+        return normalized_path
 
     def _pretty_print_xml(self, element: ET.Element) -> str:
         """

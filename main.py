@@ -14,6 +14,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sys
 import os
+from typing import Any
 
 # Add current directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -151,6 +152,16 @@ class SalesLedgerApp:
                 self.frames[screen_name].load_logs()
             
             self.logger.debug(f"Switched to screen: {screen_name}")
+
+    def __getattr__(self, name: str) -> Any:
+        """
+        Proxy controller methods for screens.
+
+        Screens receive the app instance so they can navigate with
+        ``show_screen()``. Most of their data operations live on the
+        AppController, so unknown attributes are delegated there.
+        """
+        return getattr(self.controller, name)
     
     def _show_about(self):
         """Show about dialog."""

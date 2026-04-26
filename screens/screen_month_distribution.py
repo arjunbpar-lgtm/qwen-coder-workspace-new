@@ -6,7 +6,6 @@ Screen for configuring monthly percentage distribution of annual sales.
 
 import tkinter as tk
 from tkinter import ttk, messagebox
-from utils.tooltip import Tooltip
 
 
 class MonthlyDistributionScreen(ttk.Frame):
@@ -41,39 +40,13 @@ class MonthlyDistributionScreen(ttk.Frame):
     
     def _create_widgets(self):
         """Create all widgets for this screen."""
-        # Main container with two columns (content + help)
-        main_frame = ttk.Frame(self)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
-        main_frame.columnconfigure(0, weight=1)
-        
-        # Content frame (left side)
-        content_frame = ttk.Frame(main_frame)
-        content_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-        content_frame.columnconfigure(0, weight=1)
-        
-        # Help panel (right side)
-        help_frame = self._create_help_panel(
-            main_frame,
-            "Monthly Distribution",
-            [
-                "Purpose: Distribute your annual sales across 12 months.",
-                "",
-                "What to do:",
-                "• Enter percentage for each month (e.g., 8.33 for equal distribution)",
-                "• Or enter amount directly - percentage updates automatically",
-                "• Click 'Generate' for any month to create daily entries",
-                "",
-                "Key Rules:",
-                "• Percentages must sum to exactly 100%",
-                "• Amounts must sum to annual sales exactly",
-                "• Green indicators show valid totals"
-            ]
-        )
-        help_frame.grid(row=0, column=1, sticky=(tk.N, tk.S), padx=(20, 0))
+        # Configure grid
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(1, weight=1)
         
         # Title
-        title_frame = ttk.Frame(content_frame)
-        title_frame.grid(row=0, column=0, pady=(0, 15))
+        title_frame = ttk.Frame(self)
+        title_frame.grid(row=0, column=0, pady=20)
         title_frame.columnconfigure(0, weight=1)
         
         ttk.Label(
@@ -88,23 +61,28 @@ class MonthlyDistributionScreen(ttk.Frame):
             font=('Helvetica', 10)
         ).grid(row=1, column=0, pady=5)
         
+        # Content frame
+        content_frame = ttk.Frame(self)
+        content_frame.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), padx=20, pady=10)
+        content_frame.columnconfigure(0, weight=1)
+        content_frame.rowconfigure(0, weight=1)
+        
         # Create table frame
         table_frame = ttk.LabelFrame(content_frame, text="Monthly Breakdown", padding="10")
-        table_frame.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=10)
+        table_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         table_frame.columnconfigure(0, weight=1)
         
         # Header row
-        header_font = ('Helvetica', 10, 'bold')
-        ttk.Label(table_frame, text="Month", font=header_font).grid(
+        ttk.Label(table_frame, text="Month", font=('Helvetica', 10, 'bold')).grid(
             row=0, column=0, padx=5, pady=5, sticky=tk.W
         )
-        ttk.Label(table_frame, text="Percentage (%)", font=header_font).grid(
+        ttk.Label(table_frame, text="Percentage", font=('Helvetica', 10, 'bold')).grid(
             row=0, column=1, padx=5, pady=5, sticky=tk.W
         )
-        ttk.Label(table_frame, text="Amount (₹)", font=header_font).grid(
+        ttk.Label(table_frame, text="Amount (₹)", font=('Helvetica', 10, 'bold')).grid(
             row=0, column=2, padx=5, pady=5, sticky=tk.W
         )
-        ttk.Label(table_frame, text="Generate", font=header_font).grid(
+        ttk.Label(table_frame, text="Generate", font=('Helvetica', 10, 'bold')).grid(
             row=0, column=3, padx=5, pady=5, sticky=tk.W
         )
         
@@ -124,7 +102,6 @@ class MonthlyDistributionScreen(ttk.Frame):
             pct_entry = ttk.Entry(table_frame, textvariable=pct_var, width=10)
             pct_entry.bind('<FocusOut>', lambda e, idx=i: self._on_percentage_change(idx))
             pct_entry.grid(row=row, column=1, padx=5, pady=3)
-            Tooltip(pct_entry, f"Enter percentage for {month}. Total must equal 100%")
             self.entry_widgets.append(pct_entry)
             
             # Amount entry
@@ -134,7 +111,6 @@ class MonthlyDistributionScreen(ttk.Frame):
             amt_entry = ttk.Entry(table_frame, textvariable=amt_var, width=15)
             amt_entry.bind('<FocusOut>', lambda e, idx=i: self._on_amount_change(idx))
             amt_entry.grid(row=row, column=2, padx=5, pady=3)
-            Tooltip(amt_entry, f"Enter amount for {month}. Total must equal annual sales")
             self.amount_entry_widgets.append(amt_entry)
             
             # Generate button
@@ -145,42 +121,41 @@ class MonthlyDistributionScreen(ttk.Frame):
                 width=10
             )
             gen_btn.grid(row=row, column=3, padx=5, pady=3)
-            Tooltip(gen_btn, f"Generate daily entries for {month}")
         
-        # Status indicators frame
-        status_frame = ttk.LabelFrame(content_frame, text="Distribution Status", padding="15")
-        status_frame.grid(row=2, column=0, sticky=(tk.W, tk.E), pady=10)
-        status_frame.columnconfigure(1, weight=1)
+        # Indicator frame
+        indicator_frame = ttk.LabelFrame(content_frame, text="Distribution Status", padding="10")
+        indicator_frame.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=10)
+        indicator_frame.columnconfigure(1, weight=1)
         
-        # Total Percentage
-        ttk.Label(status_frame, text="Total Percentage:", font=('Helvetica', 10)).grid(
-            row=0, column=0, sticky=tk.W, pady=8
+        # Percentage balance
+        ttk.Label(indicator_frame, text="Percentage Balance:").grid(
+            row=0, column=0, sticky=tk.W, pady=5
         )
-        self.total_pct_var = tk.StringVar(value="100.00%")
-        self.total_pct_label = ttk.Label(
-            status_frame,
-            textvariable=self.total_pct_var,
+        self.pct_balance_var = tk.StringVar(value="100.00%")
+        self.pct_balance_label = ttk.Label(
+            indicator_frame,
+            textvariable=self.pct_balance_var,
             font=('Helvetica', 11, 'bold'),
             foreground='green'
         )
-        self.total_pct_label.grid(row=0, column=1, sticky=tk.W, pady=8, padx=10)
+        self.pct_balance_label.grid(row=0, column=1, sticky=tk.W, pady=5, padx=10)
         
-        # Remaining Amount
-        ttk.Label(status_frame, text="Remaining Amount:", font=('Helvetica', 10)).grid(
-            row=1, column=0, sticky=tk.W, pady=8
+        # Amount balance
+        ttk.Label(indicator_frame, text="Amount Balance:").grid(
+            row=1, column=0, sticky=tk.W, pady=5
         )
-        self.remaining_amt_var = tk.StringVar(value="₹0.00")
-        self.remaining_amt_label = ttk.Label(
-            status_frame,
-            textvariable=self.remaining_amt_var,
+        self.amt_balance_var = tk.StringVar(value="₹0.00")
+        self.amt_balance_label = ttk.Label(
+            indicator_frame,
+            textvariable=self.amt_balance_var,
             font=('Helvetica', 11, 'bold'),
             foreground='green'
         )
-        self.remaining_amt_label.grid(row=1, column=1, sticky=tk.W, pady=8, padx=10)
+        self.amt_balance_label.grid(row=1, column=1, sticky=tk.W, pady=5, padx=10)
         
         # Buttons frame
-        button_frame = ttk.Frame(content_frame)
-        button_frame.grid(row=3, column=0, pady=20)
+        button_frame = ttk.Frame(self)
+        button_frame.grid(row=2, column=0, pady=20)
         
         self.back_btn = ttk.Button(
             button_frame,
@@ -198,34 +173,10 @@ class MonthlyDistributionScreen(ttk.Frame):
             state=tk.DISABLED
         )
         self.proceed_btn.grid(row=0, column=1, padx=10)
-        Tooltip(self.proceed_btn, "Proceed to Month Generator when distribution is complete")
         
         # Initialize amounts
         self._update_all_amounts()
         self._update_balances()
-    
-    def _create_help_panel(self, parent, title, lines):
-        """Create a help panel with formatted text."""
-        frame = ttk.LabelFrame(parent, text=title, padding="15", width=280)
-        frame.columnconfigure(0, weight=1)
-        
-        for i, line in enumerate(lines):
-            if line.startswith("•"):
-                ttk.Label(frame, text=line, foreground='#444444').grid(
-                    row=i, column=0, sticky=tk.W, pady=2, padx=(10, 0)
-                )
-            elif line.startswith("Key Rules:") or line.startswith("What to do:"):
-                ttk.Label(frame, text=line, font=('Helvetica', 9, 'bold')).grid(
-                    row=i, column=0, sticky=tk.W, pady=(8, 4)
-                )
-            elif line == "":
-                ttk.Label(frame, text="").grid(row=i, column=0)
-            else:
-                ttk.Label(frame, text=line, wraplength=250).grid(
-                    row=i, column=0, sticky=tk.W, pady=2
-                )
-        
-        return frame
     
     def _on_percentage_change(self, index):
         """Handle percentage change - update corresponding amount."""
@@ -268,29 +219,31 @@ class MonthlyDistributionScreen(ttk.Frame):
         """Update percentage and amount balance indicators."""
         try:
             total_pct = sum(float(v.get() or 0) for v in self.percentage_vars)
+            pct_balance = 100.0 - total_pct
+            
             annual_sales = self.controller.get_annual_sales()
             total_amount = sum(float(v.get().replace(',', '') or 0) for v in self.amount_vars)
+            amt_balance = annual_sales - total_amount
             
-            # Update total percentage display
-            self.total_pct_var.set(f"{total_pct:.2f}%")
-            if abs(total_pct - 100.0) < 0.01:
-                self.total_pct_label.configure(foreground='green')
+            # Update percentage balance display
+            self.pct_balance_var.set(f"{pct_balance:+.2f}%")
+            if abs(pct_balance) < 0.01:
+                self.pct_balance_label.configure(foreground='green')
             else:
-                self.total_pct_label.configure(foreground='red')
+                self.pct_balance_label.configure(foreground='red')
             
-            # Update remaining amount display
-            remaining = annual_sales - total_amount
-            self.remaining_amt_var.set(f"₹{remaining:+,.2f}")
-            if abs(remaining) < 0.01:
-                self.remaining_amt_label.configure(foreground='green')
+            # Update amount balance display
+            self.amt_balance_var.set(f"₹{amt_balance:+,.2f}")
+            if abs(amt_balance) < 0.01:
+                self.amt_balance_label.configure(foreground='green')
                 self.proceed_btn.configure(state=tk.NORMAL)
             else:
-                self.remaining_amt_label.configure(foreground='red')
+                self.amt_balance_label.configure(foreground='red')
                 self.proceed_btn.configure(state=tk.DISABLED)
                 
         except ValueError:
-            self.total_pct_var.set("Error")
-            self.remaining_amt_var.set("Error")
+            self.pct_balance_var.set("Error")
+            self.amt_balance_var.set("Error")
             self.proceed_btn.configure(state=tk.DISABLED)
     
     def _generate_month(self, index):

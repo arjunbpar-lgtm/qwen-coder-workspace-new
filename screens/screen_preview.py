@@ -6,7 +6,6 @@ Screen for previewing generated entries before export.
 
 import tkinter as tk
 from tkinter import ttk
-from utils.tooltip import Tooltip
 
 
 class PreviewScreen(ttk.Frame):
@@ -24,39 +23,13 @@ class PreviewScreen(ttk.Frame):
     
     def _create_widgets(self):
         """Create all widgets for this screen."""
-        # Main container with two columns (content + help)
-        main_frame = ttk.Frame(self)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
-        main_frame.columnconfigure(0, weight=1)
-        
-        # Content frame (left side)
-        content_frame = ttk.Frame(main_frame)
-        content_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-        content_frame.columnconfigure(0, weight=1)
-        
-        # Help panel (right side)
-        help_frame = self._create_help_panel(
-            main_frame,
-            "Preview Entries",
-            [
-                "Purpose: Review generated entries before proceeding to export.",
-                "",
-                "What to do:",
-                "• Scroll through the list to verify entries",
-                "• Check dates, amounts, and narration text",
-                "• Click 'Proceed' when satisfied with the data",
-                "",
-                "Key Rules:",
-                "• Only first 50 entries are shown",
-                "• All entries will be exported regardless",
-                "• Go back to modify if needed"
-            ]
-        )
-        help_frame.grid(row=0, column=1, sticky=(tk.N, tk.S), padx=(20, 0))
+        # Configure grid
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(1, weight=1)
         
         # Title
-        title_frame = ttk.Frame(content_frame)
-        title_frame.grid(row=0, column=0, pady=(0, 15))
+        title_frame = ttk.Frame(self)
+        title_frame.grid(row=0, column=0, pady=20)
         title_frame.columnconfigure(0, weight=1)
         
         ttk.Label(
@@ -72,13 +45,13 @@ class PreviewScreen(ttk.Frame):
         ).grid(row=1, column=0, pady=5)
         
         # Content frame
-        inner_content = ttk.Frame(content_frame)
-        inner_content.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-        inner_content.columnconfigure(0, weight=1)
-        inner_content.rowconfigure(0, weight=1)
+        content_frame = ttk.Frame(self)
+        content_frame.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), padx=20, pady=10)
+        content_frame.columnconfigure(0, weight=1)
+        content_frame.rowconfigure(0, weight=1)
         
         # Treeview with scrollbar
-        tree_frame = ttk.LabelFrame(inner_content, text="Entries Preview", padding="10")
+        tree_frame = ttk.Frame(content_frame)
         tree_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         tree_frame.columnconfigure(0, weight=1)
         tree_frame.rowconfigure(0, weight=1)
@@ -103,7 +76,7 @@ class PreviewScreen(ttk.Frame):
         hsb.grid(row=1, column=0, sticky=(tk.W, tk.E))
         
         # Buttons frame
-        button_frame = ttk.Frame(content_frame)
+        button_frame = ttk.Frame(self)
         button_frame.grid(row=2, column=0, pady=20)
         
         self.back_btn = ttk.Button(
@@ -121,30 +94,6 @@ class PreviewScreen(ttk.Frame):
             width=15
         )
         self.proceed_btn.grid(row=0, column=1, padx=10)
-        Tooltip(self.proceed_btn, "Continue to Summary & Export screen")
-    
-    def _create_help_panel(self, parent, title, lines):
-        """Create a help panel with formatted text."""
-        frame = ttk.LabelFrame(parent, text=title, padding="15", width=280)
-        frame.columnconfigure(0, weight=1)
-        
-        for i, line in enumerate(lines):
-            if line.startswith("•"):
-                ttk.Label(frame, text=line, foreground='#444444').grid(
-                    row=i, column=0, sticky=tk.W, pady=2, padx=(10, 0)
-                )
-            elif line.startswith("Key Rules:") or line.startswith("What to do:"):
-                ttk.Label(frame, text=line, font=('Helvetica', 9, 'bold')).grid(
-                    row=i, column=0, sticky=tk.W, pady=(8, 4)
-                )
-            elif line == "":
-                ttk.Label(frame, text="").grid(row=i, column=0)
-            else:
-                ttk.Label(frame, text=line, wraplength=250).grid(
-                    row=i, column=0, sticky=tk.W, pady=2
-                )
-        
-        return frame
     
     def load_entries(self):
         """Load entries from controller and display in tree."""
