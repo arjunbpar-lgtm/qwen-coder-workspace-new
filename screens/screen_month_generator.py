@@ -10,8 +10,7 @@ from ui.scrollable_frame import ScrollableFrame
 from ui.tooltip import add_tooltip
 from ui.help_panel import HelpPanel
 from ui.status_bar import StatusBar
-from utils.logger import Logger
-import random
+from utils.logger import get_logger
 from datetime import datetime
 
 
@@ -32,7 +31,7 @@ class MonthGeneratorScreen(ttk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
-        self.logger = Logger()
+        self.logger = get_logger()
         
         self.leave_days = set()
         self.current_month = None
@@ -270,7 +269,7 @@ class MonthGeneratorScreen(ttk.Frame):
         self.back_btn = ttk.Button(
             btn_frame,
             text="← Back",
-            command=lambda: self.controller.show_screen('month_distribution')
+            command=lambda: self.controller.show_screen('monthly_distribution')
         )
         self.back_btn.pack(side=tk.LEFT, padx=10)
         add_tooltip(
@@ -320,9 +319,16 @@ class MonthGeneratorScreen(ttk.Frame):
         self.status_bar.clear()
         self.status_indicator.config(text="", foreground="black")
         
-        # Get month from controller
-        self.current_month = self.controller.data_store.get('current_month')
-        self.current_month_amount = self.controller.data_store.get('current_month_amount', 0.0)
+        month_idx = self.controller.get_selected_month()
+        distribution = self.controller.get_monthly_distribution()
+
+        if distribution and 0 <= month_idx < len(distribution):
+            month_data = distribution[month_idx]
+            self.current_month = month_data.get('month')
+            self.current_month_amount = month_data.get('amount', 0.0)
+        else:
+            self.current_month = None
+            self.current_month_amount = 0.0
         
         # Comprehensive validation with actionable messages
         if self.current_month is None:
@@ -490,7 +496,7 @@ class MonthGeneratorScreen(ttk.Frame):
             
             # Get selected leave days
             selected_indices = list(self.calendar_listbox.curselection())
-            self.leave_days = set(selected_indices)
+            self.leave_days = {index + 1 for index in selected_indices}
             
             # Calculate working days
             total_days = self.calendar_listbox.size()
@@ -511,9 +517,25 @@ class MonthGeneratorScreen(ttk.Frame):
             )
             self.generate_btn.state(['disabled'])
             
-            # Perform generation (simplified logic for brevity)
-            # In production, this would call the actual generator module
-            generated_count = working_days  # Placeholder
+            month_idx = self.controller.get_selected_month()
+            entries = self.controller.generate_month_entries(
+                month_idx=month_idx,
+                monthly_total=self.current_month_amount,
+                min_daily=min_daily,
+                max_daily=max_daily,
+                leave_days=self.leave_days,
+                debit_ledger=self.debit_ledger_var.get().strip() or "Cash",
+                credit_ledger=self.credit_ledger_var.get().strip() or "Sales",
+                narration=self.narration_var.get().strip() or f"Sales for {self.current_month}",
+                round_to_10=self.rounding_var.get()
+            )
+            generated_count = len(entries)
+
+            if generated_count == 0:
+                raise ValueError(
+                    "No entries were generated.\n\n"
+                    "Please review the leave days and daily value constraints."
+                )
             
             # Success
             self.status_bar.set_valid(
@@ -551,7 +573,7 @@ class MonthGeneratorScreen(ttk.Frame):
             error_message = f"An unexpected error occurred: {str(e)}"
             self.status_bar.set_error(error_message)
             messagebox.showerror("Error", error_message)
-            self.logger.error(f"Unexpected error in month generation: {str(e)}", exc_info=True)
+            self.logger.error(f"Unexpected error in month generation: {str(e)}")
         
         finally:
             self.generate_btn.state(['!disabled'])

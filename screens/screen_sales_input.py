@@ -10,7 +10,7 @@ from ui.scrollable_frame import ScrollableFrame
 from ui.tooltip import add_tooltip
 from ui.help_panel import HelpPanel
 from ui.status_bar import StatusBar
-from utils.logger import Logger
+from utils.logger import get_logger
 
 
 class SalesInputScreen(ttk.Frame):
@@ -24,7 +24,7 @@ class SalesInputScreen(ttk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
-        self.logger = Logger()
+        self.logger = get_logger()
         
         # Configure main grid for responsiveness
         self.grid_rowconfigure(0, weight=1)
@@ -197,9 +197,9 @@ class SalesInputScreen(ttk.Frame):
             self.annual_sales_entry.focus_set()
             return
         
-        # Update data store
-        self.controller.data_store['annual_sales'] = annual_sales
-        self.controller.data_store['mode'] = self.mode_var.get()
+        # Update controller state
+        self.controller.set_annual_sales(annual_sales)
+        self.controller.set_mode(self.mode_var.get())
         
         # Update status
         self.status_bar.set_valid(f"Annual sales: ₹{annual_sales:,.2f} | Mode: {self.mode_var.get()}")
@@ -210,4 +210,4 @@ class SalesInputScreen(ttk.Frame):
         )
         
         # Navigate to next screen
-        self.controller.show_screen('month_distribution')
+        self.controller.show_screen('monthly_distribution')
