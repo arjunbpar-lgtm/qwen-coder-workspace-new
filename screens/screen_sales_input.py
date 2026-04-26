@@ -6,159 +6,208 @@ First screen of the wizard for entering annual sales parameters.
 
 import tkinter as tk
 from tkinter import ttk, messagebox
+from ui.scrollable_frame import ScrollableFrame
+from ui.tooltip import add_tooltip
+from ui.help_panel import HelpPanel
+from ui.status_bar import StatusBar
+from utils.logger import Logger
 
 
 class SalesInputScreen(ttk.Frame):
     """
-    Screen for entering total annual sales and mode selection.
+    Sales Input Screen - First step in the ledger generation wizard.
     
-    Fields:
-    - Total Annual Sales
-    - Mode Selection: Build From Annual Sales / Reconcile From Deposits
+    Allows users to enter total annual sales and select the mode of operation.
+    Includes validation, tooltips, help panel, and status indicators.
     """
     
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
+        self.logger = Logger()
         
-        # Variables
-        self.annual_sales_var = tk.StringVar(value="1200000")
-        self.mode_var = tk.StringVar(value="annual")
+        # Configure main grid for responsiveness
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
         
-        self._create_widgets()
-    
-    def _create_widgets(self):
-        """Create all widgets for this screen."""
-        # Configure grid
-        self.columnconfigure(0, weight=1)
-        self.rowconfigure(1, weight=1)
+        # Main container with scrollable support
+        main_container = ttk.Frame(self)
+        main_container.grid(row=0, column=0, sticky="nsew", padx=20, pady=20)
+        main_container.grid_rowconfigure(0, weight=1)
+        main_container.grid_columnconfigure(0, weight=1)
+        
+        # Create scrollable frame
+        self.scroll_frame = ScrollableFrame(main_container)
+        self.scroll_frame.grid(row=0, column=0, sticky="nsew")
+        
+        # Content container (where actual widgets go)
+        content = self.scroll_frame.container
+        content.grid_columnconfigure(0, weight=1)
         
         # Title
-        title_frame = ttk.Frame(self)
-        title_frame.grid(row=0, column=0, pady=20)
-        title_frame.columnconfigure(0, weight=1)
-        
-        ttk.Label(
-            title_frame,
-            text="Sales Input",
-            font=('Helvetica', 16, 'bold')
-        ).grid(row=0, column=0)
-        
-        ttk.Label(
-            title_frame,
-            text="Enter your annual sales details",
-            font=('Helvetica', 10)
-        ).grid(row=1, column=0, pady=5)
-        
-        # Content frame
-        content_frame = ttk.LabelFrame(self, text="Sales Parameters", padding="20")
-        content_frame.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), padx=20, pady=10)
-        content_frame.columnconfigure(1, weight=1)
-        
-        row = 0
-        
-        # Total Annual Sales
-        ttk.Label(
-            content_frame,
-            text="Total Annual Sales (₹):",
-            font=('Helvetica', 11)
-        ).grid(row=row, column=0, sticky=tk.W, pady=10)
-        
-        self.annual_sales_entry = ttk.Entry(
-            content_frame,
-            textvariable=self.annual_sales_var,
-            width=30,
-            font=('Helvetica', 11)
+        title_label = ttk.Label(
+            content,
+            text="Sales Input Screen",
+            font=("Helvetica", 18, "bold")
         )
-        self.annual_sales_entry.grid(row=row, column=1, sticky=(tk.W, tk.E), pady=10, padx=10)
-        row += 1
+        title_label.grid(row=0, column=0, pady=(0, 20), sticky="w")
         
-        # Mode Selection
+        # Annual Sales Input Section
+        sales_frame = ttk.LabelFrame(content, text="Annual Sales Entry", padding=15)
+        sales_frame.grid(row=1, column=0, sticky="ew", pady=(0, 20))
+        sales_frame.grid_columnconfigure(1, weight=1)
+        
         ttk.Label(
-            content_frame,
-            text="Mode:",
-            font=('Helvetica', 11)
-        ).grid(row=row, column=0, sticky=tk.W, pady=10)
+            sales_frame,
+            text="Total Annual Sales (₹):",
+            font=("Helvetica", 11)
+        ).grid(row=0, column=0, sticky="w", pady=(0, 10))
         
-        mode_frame = ttk.Frame(content_frame)
-        mode_frame.grid(row=row, column=1, sticky=tk.W, pady=10)
+        self.annual_sales_var = tk.StringVar()
+        self.annual_sales_entry = ttk.Entry(
+            sales_frame,
+            textvariable=self.annual_sales_var,
+            font=("Helvetica", 11),
+            width=30
+        )
+        self.annual_sales_entry.grid(row=1, column=0, sticky="ew", pady=(0, 10))
+        add_tooltip(
+            self.annual_sales_entry,
+            "Enter the total sales amount for the entire financial year.\n"
+            "Example: 1200000 for ₹12 Lakhs."
+        )
         
-        ttk.Radiobutton(
+        # Mode Selection Section
+        mode_frame = ttk.LabelFrame(content, text="Operation Mode", padding=15)
+        mode_frame.grid(row=2, column=0, sticky="ew", pady=(0, 20))
+        
+        ttk.Label(
             mode_frame,
+            text="Select how you want to generate ledgers:",
+            font=("Helvetica", 11)
+        ).grid(row=0, column=0, sticky="w", pady=(0, 10))
+        
+        self.mode_var = tk.StringVar(value="build")
+        
+        build_frame = ttk.Frame(mode_frame)
+        build_frame.grid(row=1, column=0, sticky="w", pady=5)
+        build_radio = ttk.Radiobutton(
+            build_frame,
             text="Build From Annual Sales",
             variable=self.mode_var,
-            value="annual"
-        ).grid(row=0, column=0, padx=10)
+            value="build"
+        )
+        build_radio.pack(side=tk.LEFT)
+        add_tooltip(
+            build_radio,
+            "Distributes your annual sales across months based on percentages\n"
+            "you specify in the next screen."
+        )
         
-        ttk.Radiobutton(
-            mode_frame,
+        reconcile_frame = ttk.Frame(mode_frame)
+        reconcile_frame.grid(row=2, column=0, sticky="w", pady=5)
+        reconcile_radio = ttk.Radiobutton(
+            reconcile_frame,
             text="Reconcile From Deposits",
             variable=self.mode_var,
-            value="deposits"
-        ).grid(row=0, column=1, padx=10)
-        row += 1
-        
-        # Info label
-        info_label = ttk.Label(
-            content_frame,
-            text="Note: In 'Build From Annual Sales' mode, you specify the total\n"
-                 "and it gets distributed across months. In 'Reconcile From Deposits'\n"
-                 "mode, you start with bank deposits and work backwards.",
-            foreground='gray',
-            justify=tk.LEFT
+            value="reconcile"
         )
-        info_label.grid(row=row, column=0, columnspan=2, pady=20)
-        
-        # Buttons frame
-        button_frame = ttk.Frame(self)
-        button_frame.grid(row=2, column=0, pady=20)
-        
-        self.back_btn = ttk.Button(
-            button_frame,
-            text="Back",
-            command=self.go_back,
-            width=15
+        reconcile_radio.pack(side=tk.LEFT)
+        add_tooltip(
+            reconcile_radio,
+            "Generates entries based on actual bank deposits.\n"
+            "(Feature coming soon - currently behaves like Build mode)"
         )
-        self.back_btn.grid(row=0, column=0, padx=10)
+        
+        # Navigation Buttons
+        btn_frame = ttk.Frame(content)
+        btn_frame.grid(row=3, column=0, pady=30)
         
         self.proceed_btn = ttk.Button(
-            button_frame,
-            text="Proceed →",
-            command=self.proceed,
-            width=15
+            btn_frame,
+            text="Proceed → Monthly Distribution",
+            command=self.on_proceed_clicked,
+            style="Accent.TButton"
         )
-        self.proceed_btn.grid(row=0, column=1, padx=10)
+        self.proceed_btn.pack(side=tk.LEFT, padx=10)
+        add_tooltip(
+            self.proceed_btn,
+            "Validate inputs and proceed to configure monthly distribution percentages."
+        )
+        
+        # Help Panel (right side)
+        help_panel = HelpPanel(main_container)
+        help_panel.grid(row=0, column=1, sticky="ns", padx=(10, 0))
+        help_panel.set_content(
+            purpose="Enter your total annual sales figure and choose how you want to generate ledger entries.",
+            instructions=[
+                "Enter the total sales amount for the financial year",
+                "Select 'Build From Annual Sales' to distribute manually",
+                "Click 'Proceed' to configure monthly percentages"
+            ],
+            key_rules=[
+                "Sales amount must be a positive number",
+                "Decimals are allowed (e.g., 1250000.50)",
+                "This value will be used as the base for all calculations"
+            ]
+        )
+        
+        # Status Bar (bottom)
+        self.status_bar = StatusBar(main_container)
+        self.status_bar.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(10, 0))
+        self.status_bar.set_status("Ready", "Enter annual sales to begin")
+        
+        # Bind Enter key to proceed
+        self.bind('<Return>', lambda e: self.on_proceed_clicked())
+        
+        self.logger.info("Sales Input Screen initialized")
     
-    def validate_input(self) -> bool:
-        """Validate numeric input for annual sales."""
-        try:
-            value = self.annual_sales_var.get().strip()
-            if not value:
-                messagebox.showerror("Validation Error", "Please enter annual sales amount")
-                return False
-            
-            amount = float(value.replace(',', ''))
-            if amount <= 0:
-                messagebox.showerror("Validation Error", "Annual sales must be positive")
-                return False
-            
-            return True
-        except ValueError:
-            messagebox.showerror("Validation Error", "Please enter a valid number")
-            return False
-    
-    def proceed(self):
-        """Validate and proceed to next screen."""
-        if not self.validate_input():
+    def on_proceed_clicked(self):
+        """Validate inputs and navigate to the next screen."""
+        # Clear previous status
+        self.status_bar.clear()
+        
+        # Validate annual sales input
+        sales_text = self.annual_sales_var.get().strip()
+        
+        if not sales_text:
+            self.status_bar.set_error("Missing required input: Total Annual Sales")
+            messagebox.showerror(
+                "Validation Error",
+                "Please enter the total annual sales amount.\n\n"
+                "This is required to calculate monthly distributions."
+            )
+            self.annual_sales_entry.focus_set()
             return
         
-        # Store data in controller
-        self.controller.set_annual_sales(float(self.annual_sales_var.get().replace(',', '')))
-        self.controller.set_mode(self.mode_var.get())
+        try:
+            annual_sales = float(sales_text)
+            if annual_sales <= 0:
+                raise ValueError("Must be positive")
+        except ValueError:
+            self.status_bar.set_error("Invalid number format")
+            messagebox.showerror(
+                "Validation Error",
+                "Please enter a valid positive number.\n\n"
+                "Examples:\n"
+                "• 1200000\n"
+                "• 1250000.50\n"
+                "• 1,200,000 (commas will be removed automatically)"
+            )
+            self.annual_sales_entry.focus_set()
+            return
+        
+        # Update data store
+        self.controller.data_store['annual_sales'] = annual_sales
+        self.controller.data_store['mode'] = self.mode_var.get()
+        
+        # Update status
+        self.status_bar.set_valid(f"Annual sales: ₹{annual_sales:,.2f} | Mode: {self.mode_var.get()}")
+        
+        # Log action
+        self.logger.info(
+            f"Sales input recorded: ₹{annual_sales:,.2f}, mode: {self.mode_var.get()}"
+        )
         
         # Navigate to next screen
-        self.controller.show_screen("monthly_distribution")
-    
-    def go_back(self):
-        """Go back to previous screen or exit if first screen."""
-        messagebox.showinfo("Info", "This is the first screen")
+        self.controller.show_screen('month_distribution')
