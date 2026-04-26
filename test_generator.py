@@ -7,6 +7,7 @@ Run with: pytest test_generator.py -v
 import pytest
 import sys
 import os
+import tempfile
 from datetime import datetime
 import xml.etree.ElementTree as ET
 import pandas as pd
@@ -16,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from generator import SalesLedgerGenerator
 from xml_converter import TallyXMLConverter
-from utils import (
+from ledger_utils import (
     get_preset_weights,
     normalize_percentages,
     split_amount_into_entries
@@ -156,7 +157,7 @@ class TestXMLStructureValid:
         monthly_df, ledger_df = gen.generate_full_ledger()
         
         converter = TallyXMLConverter(company_name="Test Company")
-        output_path = "/tmp/test_vouchers.xml"
+        output_path = os.path.join(tempfile.gettempdir(), "test_vouchers.xml")
         converter.convert_ledger_to_xml(ledger_df, output_path)
         
         # Parse and verify structure
@@ -225,7 +226,7 @@ class TestGSTAmountsCorrect:
             sales_ledger_name="Sales",
             cash_ledger_name="Cash"
         )
-        output_path = "/tmp/test_gst_vouchers.xml"
+        output_path = os.path.join(tempfile.gettempdir(), "test_gst_vouchers.xml")
         converter.convert_ledger_to_xml(
             ledger_df.head(1),  # Just first entry for simplicity
             output_path,
